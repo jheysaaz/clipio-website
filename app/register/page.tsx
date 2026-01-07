@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
@@ -22,11 +21,9 @@ export const dynamic = "force-dynamic";
 type Step = 1 | 2;
 
 function RegisterForm() {
-  const searchParams = useSearchParams();
   const [step, setStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [redirectToExtension, setRedirectToExtension] = useState(false);
 
   // Step 1 data
   const [email, setEmail] = useState("");
@@ -45,12 +42,6 @@ function RegisterForm() {
 
   const API_URL =
     process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
-
-  useEffect(() => {
-    if (searchParams.get("redirect") === "extension") {
-      setRedirectToExtension(true);
-    }
-  }, [searchParams]);
 
   const checkUsernameAvailability = async (value: string) => {
     if (value.length < 3) {
@@ -153,13 +144,7 @@ function RegisterForm() {
       localStorage.setItem("user", JSON.stringify(data.user));
 
       // Show success message
-      if (redirectToExtension) {
-        alert(
-          "Registration successful! You can now close this tab and open the Clipio extension."
-        );
-      } else {
-        window.location.href = "/login?registered=true";
-      }
+      window.location.href = "/login?registered=true";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {

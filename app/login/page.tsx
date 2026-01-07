@@ -26,7 +26,6 @@ function LoginForm() {
   const [success, setSuccess] = useState("");
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
-  const [redirectToExtension, setRedirectToExtension] = useState(false);
 
   const API_URL =
     process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
@@ -34,10 +33,6 @@ function LoginForm() {
   useEffect(() => {
     if (searchParams.get("registered") === "true") {
       setSuccess("Account created successfully! Please login.");
-    }
-    // Check if redirect param is set for extension
-    if (searchParams.get("redirect") === "extension") {
-      setRedirectToExtension(true);
     }
   }, [searchParams]);
 
@@ -71,13 +66,7 @@ function LoginForm() {
       localStorage.setItem("user", JSON.stringify(data.user));
 
       // Show success message
-      if (redirectToExtension) {
-        alert(
-          "Login successful! You can now close this tab and open the Clipio extension."
-        );
-      } else {
-        window.location.href = "/";
-      }
+      setSuccess("Login successful!");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {

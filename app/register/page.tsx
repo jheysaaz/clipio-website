@@ -28,8 +28,6 @@ function RegisterForm() {
   const [error, setError] = useState("");
   const [redirectToExtension, setRedirectToExtension] = useState(false);
 
-  const CHROME_EXTENSION_ID = process.env.NEXT_PUBLIC_CHROME_EXTENSION_ID;
-
   // Step 1 data
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -154,27 +152,11 @@ function RegisterForm() {
       localStorage.setItem("accessToken", data.accessToken);
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      // Registration successful, notify extension or redirect to login
-      if (redirectToExtension && CHROME_EXTENSION_ID) {
-        // Send message to extension
-        if (typeof chrome !== "undefined" && chrome.runtime) {
-          chrome.runtime.sendMessage(
-            CHROME_EXTENSION_ID,
-            {
-              type: "AUTH_SUCCESS",
-              payload: { token: data.accessToken, user: data.user },
-            },
-            () => {
-              // Close the tab after sending message
-              window.close();
-            }
-          );
-        } else {
-          // Fallback if chrome API is not available
-          alert(
-            "Registration successful! You can close this tab and return to the extension."
-          );
-        }
+      // Show success message
+      if (redirectToExtension) {
+        alert(
+          "Registration successful! You can now close this tab and open the Clipio extension."
+        );
       } else {
         window.location.href = "/login?registered=true";
       }

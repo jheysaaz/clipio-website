@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Chrome } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +30,6 @@ function LoginForm() {
 
   const API_URL =
     process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
-  const CHROME_EXTENSION_ID = process.env.NEXT_PUBLIC_CHROME_EXTENSION_ID;
 
   useEffect(() => {
     if (searchParams.get("registered") === "true") {
@@ -71,27 +70,11 @@ function LoginForm() {
       localStorage.setItem("accessToken", data.accessToken);
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      // Redirect to extension popup or home
-      if (redirectToExtension && CHROME_EXTENSION_ID) {
-        // Send message to extension
-        if (typeof chrome !== "undefined" && chrome.runtime) {
-          chrome.runtime.sendMessage(
-            CHROME_EXTENSION_ID,
-            {
-              type: "AUTH_SUCCESS",
-              payload: { token: data.accessToken, user: data.user },
-            },
-            () => {
-              // Close the tab after sending message
-              window.close();
-            }
-          );
-        } else {
-          // Fallback if chrome API is not available
-          alert(
-            "Login successful! You can close this tab and return to the extension."
-          );
-        }
+      // Show success message
+      if (redirectToExtension) {
+        alert(
+          "Login successful! You can now close this tab and open the Clipio extension."
+        );
       } else {
         window.location.href = "/";
       }
@@ -174,22 +157,6 @@ function LoginForm() {
                 Register
               </Link>
             </div>
-            {CHROME_EXTENSION_ID && (
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  window.open(
-                    `https://chrome.google.com/webstore/detail/${CHROME_EXTENSION_ID}`,
-                    "_blank"
-                  );
-                }}
-              >
-                <Chrome className="mr-2 h-4 w-4" />
-                Get Chrome Extension
-              </Button>
-            )}
           </CardFooter>
         </form>
       </Card>

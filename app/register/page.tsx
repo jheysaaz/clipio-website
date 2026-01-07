@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
@@ -16,12 +17,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 type Step = 1 | 2;
 
-export default function RegisterPage() {
+function RegisterForm() {
+  const searchParams = useSearchParams();
   const [step, setStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [redirectToExtension, setRedirectToExtension] = useState(false);
+
+  const CHROME_EXTENSION_ID = process.env.NEXT_PUBLIC_CHROME_EXTENSION_ID;
 
   // Step 1 data
   const [email, setEmail] = useState("");
@@ -40,6 +47,12 @@ export default function RegisterPage() {
 
   const API_URL =
     process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
+
+  useEffect(() => {
+    if (searchParams.get("redirect") === "extension") {
+      setRedirectToExtension(true);
+    }
+  }, [searchParams]);
 
   const checkUsernameAvailability = async (value: string) => {
     if (value.length < 3) {
@@ -137,8 +150,34 @@ export default function RegisterPage() {
         throw new Error(data.error || "Registration failed");
       }
 
-      // Registration successful, redirect to login
-      window.location.href = "/login?registered=true";
+      // Store the access token
+      localStorage.setItem("accessToken", data.accessToken);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      // Registration successful, notify extension or redirect to login
+      if (redirectToExtension && CHROME_EXTENSION_ID) {
+        // Send message to extension
+        if (typeof chrome !== "undefined" && chrome.runtime) {
+          chrome.runtime.sendMessage(
+            CHROME_EXTENSION_ID,
+            {
+              type: "AUTH_SUCCESS",
+              payload: { token: data.accessToken, user: data.user },
+            },
+            () => {
+              // Close the tab after sending message
+              window.close();
+            }
+          );
+        } else {
+          // Fallback if chrome API is not available
+          alert(
+            "Registration successful! You can close this tab and return to the extension."
+          );
+        }
+      } else {
+        window.location.href = "/login?registered=true";
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
@@ -311,5 +350,19 @@ export default function RegisterPage() {
         )}
       </Card>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          Loading...
+        </div>
+      }
+    >
+      <RegisterForm />
+    </Suspense>
   );
 }

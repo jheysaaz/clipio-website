@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Chrome } from "lucide-react";
 
-export default function LoginPage() {
+export const dynamic = "force-dynamic";
+
+function LoginForm() {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -68,6 +70,31 @@ export default function LoginPage() {
       // Store the access token
       localStorage.setItem("accessToken", data.accessToken);
       localStorage.setItem("user", JSON.stringify(data.user));
+
+      // Redirect to extension popup or home
+      if (redirectToExtension && CHROME_EXTENSION_ID) {
+        // Send message to extension
+        if (typeof chrome !== "undefined" && chrome.runtime) {
+          chrome.runtime.sendMessage(
+            CHROME_EXTENSION_ID,
+            {
+              type: "AUTH_SUCCESS",
+              payload: { token: data.accessToken, user: data.user },
+            },
+            () => {
+              // Close the tab after sending message
+              window.close();
+            }
+          );
+        } else {
+          // Fallback if chrome API is not available
+          alert(
+            "Login successful! You can close this tab and return to the extension."
+          );
+        }
+      } else {
+        window.location.href = "/";
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -167,5 +194,19 @@ export default function LoginPage() {
         </form>
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          Loading...
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }
